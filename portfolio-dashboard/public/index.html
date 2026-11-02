@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="light">
+<head>
+<!--
+  ===========================================================================
+  Portfolio dashboard — markup
+  ---------------------------------------------------------------------------
+  Structure only. Every figure, row and sentence is written in by render.js
+  into the elements identified below; nothing numeric is hard-coded here.
+
+  TEXT AND LANGUAGE
+  Elements carrying data-i18n are filled by applyStaticText() in i18n.js from
+  the dictionary for the active language. The Polish text left in the markup
+  is the fallback shown before the scripts run and the reference for whoever
+  edits this file — change it in js/i18n.js, not here, or the two will drift
+  apart. data-i18n-attr="placeholder" writes an attribute instead of the
+  element's content.
+
+  An element that mixes static text with a placeholder filled at runtime wraps
+  its static part in its own <span data-i18n>, because data-i18n replaces the
+  whole content of the element it sits on.
+
+  SCRIPT ORDER
+  Plain scripts, not ES modules, so the application also runs on the simplest
+  possible static host. The order below is a dependency chain — changing it
+  will break things:
+
+      config.js       settings — the file to edit when Jira changes
+      i18n.js         every user-visible string, PL and EN
+      utils.js        formatting, Polish grammar, DOM helpers
+      data.js         raw issues -> model rows
+      measures.js     model rows -> figures
+      api.js          demo / pasted / live data sources
+      tablefilter.js  per-column filtering and sorting of the detail tables
+      render.js       model + measures -> HTML
+      app.js          shell, sign-in, boot
+
+  See README.md for how to run it.
+  ===========================================================================
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfel projektów — ocena kondycji</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+
+<!-- =====================================================================
+     SIGN-IN SCREEN
+     Shown until a dataset is loaded; app.js hides it in start().
+     ===================================================================== -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="mark">
+      <!-- Placeholder wordmark for the demo company, drawn in the page rather
+           than loaded as a file: an <img> does not inherit currentColor, so a
+           logo file would have to be shipped twice, once per theme. Replace
+           the whole span with a real <img> when there is a real logo. -->
+      <span class="logo" role="img" aria-label="Northwind">
+        <svg viewBox="0 0 22 22" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square">
+            <path d="M2 19 V11"/><path d="M9 19 V4"/><path d="M16 19 V14"/>
+          </g>
+        </svg>NORTHWIND</span>
+      <b data-i18n="app.brand">Portfel projektów</b>
+    </div>
+    <h1 data-i18n="gate.title">Zaloguj się do Jiry</h1>
+    <p class="sub" data-i18n="gate.sub">Dashboard pobiera dane bezpośrednio z Jira Cloud. Token zostaje w pamięci przeglądarki na czas sesji i nie jest nigdzie zapisywany.</p>
+
+    <form id="loginForm" autocomplete="off">
+      <div class="field">
+        <label for="jiraUrl" data-i18n="gate.url">Adres Jiry</label>
+        <input type="text" id="jiraUrl" value="https://your-company.atlassian.net" spellcheck="false">
+      </div>
+      <!-- Hidden once CFG.auth is 'server': the backend then holds the
+           credentials and the browser never sees a token. -->
+      <div id="credFields">
+      <div class="field">
+        <label for="email" data-i18n="gate.email">E-mail służbowy</label>
+        <input type="email" id="email" placeholder="imie.nazwisko@firma.pl" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="token" data-i18n="gate.token">Token API</label>
+        <input type="password" id="token" data-i18n="gate.tokenPlaceholder" data-i18n-attr="placeholder" placeholder="Wklej token z konta Atlassian">
+        <p class="hint" data-i18n="gate.tokenHint">Token wygenerujesz na koncie Atlassian, w sekcji Security / API tokens.</p>
+      </div>
+      </div><!-- /credFields -->
+      <button type="submit" class="btn btn-primary" id="btnLogin" data-i18n="gate.submit">Połącz z Jirą</button>
+    </form>
+
+    <div class="msg" id="gateMsg"></div>
+
+    <div class="gate-alt">
+      <button class="btn btn-ghost" id="btnDemo" data-i18n="gate.demo">Dane demonstracyjne</button>
+      <button class="btn btn-ghost" id="btnPaste" data-i18n="gate.paste">Wklej eksport JSON</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     APPLICATION
+     All five pages exist in the DOM at once; navigation toggles .on
+     Every element with an id is filled by render.js — the markup below is
+     only the empty frame.
+     ===================================================================== -->
+<div id="app">
+  <header class="topbar">
+    <div class="mark">
+      <!-- Placeholder wordmark for the demo company, drawn in the page rather
+           than loaded as a file: an <img> does not inherit currentColor, so a
+           logo file would have to be shipped twice, once per theme. Replace
+           the whole span with a real <img> when there is a real logo. -->
+      <span class="logo" role="img" aria-label="Northwind">
+        <svg viewBox="0 0 22 22" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square">
+            <path d="M2 19 V11"/><path d="M9 19 V4"/><path d="M16 19 V14"/>
+          </g>
+        </svg>NORTHWIND</span>
+      <b data-i18n="app.brand">Portfel projektów</b>
+    </div>
+    <div class="asof"><span data-i18n="app.asOf">Stan na</span> <b id="asOf">—</b><span id="srcNote" class="srcnote"></span></div>
+    <div class="spacer"></div>
+
+    <div class="filter">
+      <button class="filter-btn" id="ruBtn" aria-haspopup="true" aria-expanded="false">
+        <span id="ruLabel">Wszystkie jednostki</span><i class="caret"></i>
+      </button>
+      <div class="filter-pop" id="ruPop"></div>
+    </div>
+
+    <!-- Language and theme sit side by side: both change how the report
+         looks rather than what it contains, and both are remembered per
+         browser. data-lang / id are what the handlers in i18n.js and app.js
+         look for. -->
+    <div class="theme-switch" id="langSwitch" role="group" aria-label="Language">
+      <button type="button" data-lang="pl" aria-pressed="true">PL</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+
+    <div class="theme-switch" role="group" aria-label="Theme">
+      <button id="thLight" aria-pressed="true" data-i18n="app.themeLight">Jasny</button>
+      <button id="thDark" aria-pressed="false" data-i18n="app.themeDark">Ciemny</button>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <nav id="nav">
+      <a href="#podsumowanie" data-p="podsumowanie" class="active" data-i18n="nav.summary">Podsumowanie</a>
+      <a href="#struktura" data-p="struktura" data-i18n="nav.structure">Struktura portfela</a>
+      <a href="#wartosc" data-p="wartosc" data-i18n="nav.value">Wartość biznesowa</a>
+      <a href="#kondycja" data-p="kondycja" data-i18n="nav.health">Kondycja portfela</a>
+      <a href="#strategia" data-p="strategia" data-i18n="nav.strategy">Inicjatywy strategiczne</a>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- PAGE: SUMMARY -->
+    <div class="page on" id="p-podsumowanie">
+      <h2 class="title" data-i18n="title.summary">Ocena kondycji portfela</h2>
+      <p class="lede" id="pods-lede"></p>
+      <div class="vitals" id="pods-vitals"></div>
+      <section class="block">
+        <h3 data-i18n="block.comment">Komentarz</h3>
+        <div class="body"><ul class="comment" id="pods-comment"></ul></div>
+      </section>
+
+      <!-- One table for both kinds of work, with a Projects / Initiatives /
+           Combined switch. The columns are identical either way, so splitting
+           it into two tables would only force the reader to scroll between
+           them and would make the combined count impossible to see. -->
+      <section class="block">
+        <div class="block-head">
+          <h3 data-i18n="pods.tableHead">Realizowane przedsięwzięcia</h3>
+          <span class="note" id="pods-listnote"></span>
+          <div class="seg" id="pods-scope" role="group" aria-label="Scope">
+            <button type="button" data-scope="proj" aria-pressed="true" data-i18n="ui.projects">Projekty</button>
+            <button type="button" data-scope="init" aria-pressed="false" data-i18n="ui.initiatives">Inicjatywy</button>
+            <button type="button" data-scope="both" aria-pressed="false" data-i18n="ui.total">Razem</button>
+          </div>
+        </div>
+        <div class="body flush"><div class="scroll tall"><table id="pods-list"></table></div></div>
+        <!-- Unit-membership control line. The rules in CFG.units are not
+             obvious (Finance & Legal is recognised by the Roadmap field),
+             so the report states what it matched and what it left out. -->
+        <div class="src" id="pods-units"></div>
+      </section>
+    </div>
+
+    <!-- PAGE: PORTFOLIO STRUCTURE -->
+    <div class="page" id="p-struktura">
+      <h2 class="title" data-i18n="title.structure">Struktura i skala portfela</h2>
+      <p class="lede" data-i18n="str.lede">Portfel obejmuje przedsięwzięcia w statusach Delivery, Analysis i Preparation. Realizowane to Delivery i Analysis łącznie.</p>
+      <div class="grid g-2">
+        <section class="block">
+          <h3 data-i18n="str.matrixHead">Struktura portfela</h3>
+          <div class="body flush"><table id="str-matrix"></table></div>
+          <div class="src" data-i18n="str.matrixHint">Kliknij wiersz, aby zawęzić listę szczegółów obok.</div>
+        </section>
+        <section class="block">
+          <h3><span data-i18n="str.detailHead">Szczegóły</span> <span class="note" id="str-detnote"></span></h3>
+          <div class="body flush"><div class="scroll"><table id="str-detail"></table></div></div>
+        </section>
+      </div>
+      <section class="block">
+        <h3 data-i18n="block.comment">Komentarz</h3>
+        <div class="body"><ul class="comment" id="str-comment"></ul></div>
+      </section>
+
+      <!-- Same switch as the summary table, and the same rule for the Type
+           column: shown only in the combined view, where the two kinds would
+           otherwise be indistinguishable. Defaults to Combined because the
+           table showed both from the start. -->
+      <section class="block">
+        <div class="block-head">
+          <h3 id="str-soonhead" data-i18n="str.soonHead">Planowane uruchomienia</h3>
+          <span class="note" id="str-soonnote"></span>
+          <div class="seg" id="str-soonscope" role="group" aria-label="Scope">
+            <button type="button" data-scope="proj" aria-pressed="false" data-i18n="ui.projects">Projekty</button>
+            <button type="button" data-scope="init" aria-pressed="false" data-i18n="ui.initiatives">Inicjatywy</button>
+            <button type="button" data-scope="both" aria-pressed="true" data-i18n="ui.total">Razem</button>
+          </div>
+        </div>
+        <div class="body flush"><table id="str-soon"></table></div>
+      </section>
+    </div>
+
+    <!-- PAGE: BUSINESS VALUE -->
+    <div class="page" id="p-wartosc">
+      <h2 class="title" data-i18n="title.value">Wartość biznesowa aktywnego portfela</h2>
+      <!-- Filled by renderWartosc(): the EBITDA horizon depends on which
+           source supplied the figures, so it cannot be written in here. -->
+      <p class="lede" id="war-lede"></p>
+
+      <div class="grid g-2">
+        <div>
+          <!-- Category split, in two tables as in the original report: shares
+               first, because that is what the commentary quotes, then the
+               amounts behind them. Both render whether or not a category
+               source is available; without one every cell is a dash and the
+               footnote says what is missing. -->
+          <section class="block">
+            <div class="block-head">
+              <h3 data-i18n="war.catHead">Projekty realizowane wg kategorii</h3>
+              <span class="note" id="war-catnote"></span>
+            </div>
+            <div class="body flush"><table id="war-cat"></table></div>
+          </section>
+          <section class="block">
+            <div class="block-head">
+              <h3 data-i18n="war.catHead">Projekty realizowane wg kategorii</h3>
+              <span class="note" id="war-cat2note"></span>
+            </div>
+            <div class="body flush"><table id="war-cat2"></table></div>
+            <div class="src" id="war-catsrc"></div>
+          </section>
+          <section class="block">
+            <h3 data-i18n="war.yearHead">Projekty realizowane wg planowanego roku zakończenia</h3>
+            <div class="body flush"><table id="war-year"></table></div>
+          </section>
+          <section class="block">
+            <h3 data-i18n="war.doneHead">Projekty realizowane i zakończone</h3>
+            <div class="body flush"><table id="war-done"></table></div>
+            <div class="src" id="war-donesrc"></div>
+          </section>
+        </div>
+        <div>
+          <section class="block">
+            <h3 data-i18n="block.comment">Komentarz</h3>
+            <div class="body"><ul class="comment" id="war-comment"></ul></div>
+          </section>
+          <section class="block">
+            <div class="block-head">
+              <h3 data-i18n="war.compHead">Projekty Compliance generujące dodatnią EBITDA</h3>
+              <span class="note" id="war-compnote"></span>
+            </div>
+            <div class="body flush"><table id="war-comp"></table></div>
+          </section>
+          <section class="block">
+            <div class="block-head">
+              <h3 id="war-koncehead">Projekty z planowanym zakończeniem</h3>
+              <span class="note" id="war-koncenote"></span>
+            </div>
+            <div class="body flush"><div class="scroll"><table id="war-konce"></table></div></div>
+          </section>
+        </div>
+      </div>
+
+      <section class="block">
+        <div class="block-head">
+          <h3 data-i18n="war.listHead">Realizowane projekty wg wartości</h3>
+          <span class="note" id="war-listnote"></span>
+          <div class="seg" id="war-measure" role="group" aria-label="Measure">
+            <button type="button" data-measure="ebitda" aria-pressed="true">EBITDA</button>
+            <button type="button" data-measure="capex" aria-pressed="false">CAPEX</button>
+            <button type="button" data-measure="opex" aria-pressed="false">OPEX</button>
+          </div>
+        </div>
+        <div class="body flush"><div class="scroll tall"><table id="war-list"></table></div></div>
+        <div class="src" id="war-src"></div>
+      </section>
+    </div>
+
+    <!-- PAGE: PORTFOLIO HEALTH -->
+    <div class="page" id="p-kondycja">
+      <h2 class="title" data-i18n="title.health">Kondycja aktywnego portfela</h2>
+      <p class="lede" data-i18n="kon.lede">Zgodność z pierwotnym harmonogramem liczona jako różnica między aktualnym a pierwotnym terminem zakończenia. Tolerancja ±30 dni.</p>
+      <div class="grid g-2">
+        <section class="block">
+          <h3 data-i18n="kon.ragHead">Realizowane projekty wg statusu RAG</h3>
+          <div class="body flush"><table id="kon-rag"></table></div>
+        </section>
+        <section class="block">
+          <h3 data-i18n="block.comment">Komentarz</h3>
+          <div class="body"><ul class="comment" id="kon-comment"></ul></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- PAGE: STRATEGIC CONTRIBUTION -->
+    <div class="page" id="p-strategia">
+      <h2 class="title" data-i18n="title.strategy">Kontrybucja w realizacji inicjatyw strategicznych</h2>
+      <p class="lede" data-i18n="stg.lede">Powiązania przedsięwzięć z inicjatywami strategicznymi wskazuje zespół ds. strategii. Status i RAG pochodzą z Jiry.</p>
+      <div class="grid g-2">
+        <section class="block">
+          <h3 data-i18n="stg.barsHead">Liczba powiązanych przedsięwzięć</h3>
+          <div class="body"><div class="bars" id="stg-bars"></div></div>
+        </section>
+        <section class="block">
+          <h3 data-i18n="block.comment">Komentarz</h3>
+          <div class="body"><ul class="comment" id="stg-comment"></ul></div>
+        </section>
+      </div>
+      <!-- The matrix is maintained by another team in Excel. Rather than have
+           the server reach into their document library, an authorised person
+           uploads the workbook here: the server parses it, keeps it, and
+           records who sent it and when — which is what makes a stale matrix
+           visible instead of silently wrong. -->
+      <section class="block">
+        <div class="block-head">
+          <h3 data-i18n="stg.matrixHead">Macierz powiązań</h3>
+          <span class="note" id="stg-src"></span>
+          <div class="upload" id="stg-upload" hidden>
+            <button type="button" class="btn-mini" id="stg-uploadBtn" data-i18n="stg.upload">Wgraj nową wersję</button>
+            <input type="file" id="stg-file" accept=".xlsx,.xlsm" hidden>
+          </div>
+        </div>
+        <div class="body flush"><div class="scroll tall"><table id="stg-matrix"></table></div></div>
+        <div class="src uploadmsg" id="stg-uploadmsg"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+
+<!-- Load order matters; see the note at the top of this file. -->
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/data.js"></script>
+<script src="js/measures.js"></script>
+<script src="js/api.js"></script>
+<script src="js/tablefilter.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

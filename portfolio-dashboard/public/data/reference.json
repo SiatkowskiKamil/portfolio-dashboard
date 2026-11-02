@@ -1,0 +1,186 @@
+{
+ "_comment": "Kopia zapasowa macierzy inicjatyw strategicznych i benchmarkow, uzywana gdy serwer nie czyta skoroszytu. Dane wymyslone.",
+ "strategic": [
+  "Service Model Redesign",
+  "Regional Integration",
+  "Data Foundations (I)",
+  "Footprint Expansion",
+  "Capacity Allocation",
+  "Channel Mix",
+  "Data Foundations (M)",
+  "Digital Ecosystem"
+ ],
+ "links": [
+  {
+   "i": "Regional Integration",
+   "k": "PF-1002"
+  },
+  {
+   "i": "Regional Integration",
+   "k": "PF-1006"
+  },
+  {
+   "i": "Regional Integration",
+   "k": "PF-1011"
+  },
+  {
+   "i": "Regional Integration",
+   "k": "PF-1047"
+  },
+  {
+   "i": "Regional Integration",
+   "k": "PF-1049"
+  },
+  {
+   "i": "Regional Integration",
+   "k": "PF-1050"
+  },
+  {
+   "i": "Regional Integration",
+   "k": "PF-1052"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1002"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1006"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1007"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1010"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1039"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1051"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1052"
+  },
+  {
+   "i": "Data Foundations (I)",
+   "k": "PF-1083"
+  },
+  {
+   "i": "Data Foundations (M)",
+   "k": "PF-1040"
+  },
+  {
+   "i": "Data Foundations (M)",
+   "k": "PF-1041"
+  },
+  {
+   "i": "Data Foundations (M)",
+   "k": "PF-1047"
+  },
+  {
+   "i": "Data Foundations (M)",
+   "k": "PF-1084"
+  },
+  {
+   "i": "Footprint Expansion",
+   "k": "PF-1001"
+  },
+  {
+   "i": "Footprint Expansion",
+   "k": "PF-1003"
+  },
+  {
+   "i": "Footprint Expansion",
+   "k": "PF-1052"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1004"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1005"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1007"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1008"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1009"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1039"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1041"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1047"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1048"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1049"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1052"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1053"
+  },
+  {
+   "i": "Service Model Redesign",
+   "k": "PF-1054"
+  },
+  {
+   "i": "Capacity Allocation",
+   "k": "PF-1007"
+  },
+  {
+   "i": "Capacity Allocation",
+   "k": "PF-1039"
+  }
+ ],
+ "benchmarks": [
+  {
+   "indicator": "Średnia projektu (mies.)",
+   "order": 1,
+   "columnLabel": "Analiza grudzień 2025",
+   "asOf": "2025-12-31",
+   "value": 19
+  },
+  {
+   "indicator": "Średnia dla fazy delivery (mies.)",
+   "order": 2,
+   "columnLabel": "Analiza grudzień 2025",
+   "asOf": "2025-12-31",
+   "value": 16
+  },
+  {
+   "indicator": "Średnia dla fazy analizy (mies.)",
+   "order": 3,
+   "columnLabel": "Analiza grudzień 2025",
+   "asOf": "2025-12-31",
+   "value": 5
+  }
+ ]
+}

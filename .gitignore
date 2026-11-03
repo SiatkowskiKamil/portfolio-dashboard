@@ -1,0 +1,13 @@
+# Workbooks the server reads. They hold EBITDA and project data and must not
+# go into source control or into a handover package — the server finds them
+# here at runtime, each environment supplying its own copy.
+dane/
+
+# Output of tools/build-single-file.js. Generated, never edited by hand.
+dist/
+
+# Local editor and OS noise
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

@@ -59,33 +59,35 @@ const CFG = {
   auth: 'user',
 
   /* ---- Jira field IDs --------------------------------------------------
-     Confirmed against the live instance in Sep 2026. If a field is remapped,
-     change it here only; data.js and api.js read these names. */
+     Placeholder IDs: every Jira instance numbers its custom fields
+     differently, so replace these with your own (Jira admin -> Custom fields,
+     or GET /rest/api/3/field). The demo dataset does not use them. If a field
+     is remapped, change it here only; data.js and api.js read these names. */
   fields: {
-    startDate:     'customfield_10015',  // Start date (current plan)
-    startOriginal: 'customfield_10502',  // Start Date (Original) — baseline
-    endOriginal:   'customfield_10503',  // End Date (Original)   — baseline
-    ebitda:        'customfield_10345',  // EBITDA [K], thousands PLN, a combined
+    startDate:     'customfield_10101',  // Start date (current plan)
+    startOriginal: 'customfield_10102',  // Start Date (Original) — baseline
+    endOriginal:   'customfield_10103',  // End Date (Original)   — baseline
+    ebitda:        'customfield_10104',  // EBITDA [K], thousands PLN, a combined
                                          // forecast over ebitdaYears (see below)
-    capex:         'customfield_10308',  // CAPEX [K], thousands PLN
-    opex:          'customfield_10309',  // OPEX [K],  thousands PLN
+    capex:         'customfield_10105',  // CAPEX [K], thousands PLN
+    opex:          'customfield_10106',  // OPEX [K],  thousands PLN
 
     // Business category. Jira stores the MPR classification; categoryMap
     // below turns it into Growth / Compliance / Maintenance.
     // Set to null to switch the whole split off: the category tables and the
     // sentences that depend on them then say so, instead of inventing one.
-    category:      'customfield_11279',  // Project classification
-    rag:           'customfield_10306',  // RAG — value may carry an emoji prefix
-    reportingUnit: 'customfield_15484',  // Reporting Unit — single select
+    category:      'customfield_10107',  // Project classification
+    rag:           'customfield_10108',  // RAG — value may carry an emoji prefix
+    reportingUnit: 'customfield_10109',  // Reporting Unit — single select
 
     /* Roadmap — a multi-select field; the Finance & Legal unit is
        recognised by it carrying the value SSC.
 
        A Jira instance can carry SEVERAL fields with the same display name —
-       ours had three called "Roadmap" — and only one of them is on the issue
+       several called "Roadmap", say — and only one of them is on the issue
        screen. Find out which by asking for a known issue and looking at what
        comes back, for example:
-           /rest/api/3/issue/PF-1234?fields=customfield_15032
+           /rest/api/3/issue/PF-1234?fields=customfield_10110
        The values are plain strings, not objects, and there are several at once:
        a project sits on several roadmaps, which is why the rule matches
        "contains SSC" rather than "equals SSC".
@@ -93,7 +95,7 @@ const CFG = {
        A list of candidate IDs may be given here if the field ever has to be
        hunted for again — the application asks for all of them and the control
        line under the summary table reports which one answered. */
-    roadmap: 'customfield_15032',   // multi-select, see the note above
+    roadmap: 'customfield_10110',   // multi-select, see the note above
     // 'duedate' is a built-in field and holds the CURRENT planned end date.
   },
 
@@ -150,7 +152,7 @@ const CFG = {
 
     /* true -> the business category comes from the workbook's Project Type
        column. Jira had no classification field on the issue screen
-       (customfield_11279 never comes back), so without the workbook the
+       (customfield_10107 never comes back), so without the workbook the
        category tables stay empty. */
     useCategory: true,
   },
